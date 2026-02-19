@@ -901,11 +901,23 @@ const chars = [
   { id:4,  src: 'BILDE4.PNG',  emoji: '🦁' },
   { id:5,  src: 'BILDE5.PNG',  emoji: '🐧' },
   { id:6,  src: 'BILDE6.PNG',  emoji: '🐯' },
-  { id:7,  src: 'BILDE7.webp',  emoji: '🦄' },
+  { id:7,  src: 'BILDE7.webp', emoji: '🦄' },
   { id:8,  src: 'BILDE8.PNG',  emoji: '🐻' },
   { id:9,  src: 'BILDE9.PNG',  emoji: '🐼' },
   { id:10, src: 'BILDE10.PNG', emoji: '🦋' },
 ];
+
+// Try fallback extensions if image fails to load
+const FALLBACK_EXTS = ['.jpeg', '.JPG', '.JPEG', '.png', '.PNG'];
+function tryNextExt(imgEl, baseName, extIndex) {
+  if(extIndex >= FALLBACK_EXTS.length) {
+    imgEl.style.display = 'none';
+    if(imgEl.nextSibling) imgEl.nextSibling.style.display = 'flex';
+    return;
+  }
+  imgEl.onerror = () => tryNextExt(imgEl, baseName, extIndex + 1);
+  imgEl.src = baseName + FALLBACK_EXTS[extIndex];
+}
 
 let p1Char = null, p2Char = null;
 let currentGame = null;
@@ -920,7 +932,8 @@ function buildCharGrid(containerId, player) {
     btn.className = 'char-btn';
     btn.dataset.id = c.id;
     // Try image, fallback emoji
-    btn.innerHTML = `<img src="${c.src}" alt="Char ${c.id}" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class='char-emoji-fallback' style='display:none'>${c.emoji}</div>`;
+    const baseName = c.src.replace(/\.[^.]+$/, ''); // strip extension
+    btn.innerHTML = `<img src="${c.src}" alt="Char ${c.id}" onerror="tryNextExt(this,'${baseName}',0)"><div class='char-emoji-fallback' style='display:none'>${c.emoji}</div>`;
     btn.addEventListener('click', () => selectChar(player, c, btn));
     grid.appendChild(btn);
   });
