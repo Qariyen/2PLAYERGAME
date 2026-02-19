@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PARTY ARENA 🎉</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;700;900&display=swap');
+
+  :root {
+    --p1: #FF4B6E;
+    --p2: #4B9EFF;
+    --gold: #FFD700;
+    --bg: #1a0a2e;
+    --card: #2d1b4e;
+    --accent: #FF9500;
+    --green: #00E676;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    overflow: hidden;
+    color: white;
+  }
+
+  /* STARS BACKGROUND */
+  .stars {
+    position: fixed; top:0;left:0;width:100%;height:100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, #1a0040 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, #001a40 0%, transparent 60%),
+                #0a0015;
+  }
+  .stars::before, .stars::after {
+    content:''; position:absolute; top:0;left:0;width:100%;height:100%;
+    background-image: radial-gradient(1px 1px at 10% 15%, white, transparent),
+      radial-gradient(1px 1px at 30% 60%, white, transparent),
+      radial-gradient(1px 1px at 50% 30%, white, transparent),
+      radial-gradient(1px 1px at 70% 80%, white, transparent),
+      radial-gradient(1px 1px at 90% 10%, white, transparent),
+      radial-gradient(1px 1px at 20% 90%, white, transparent),
+      radial-gradient(1px 1px at 60% 5%, white, transparent),
+      radial-gradient(2px 2px at 40% 45%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(2px 2px at 80% 55%, rgba(255,255,255,0.4), transparent);
+    animation: twinkle 3s ease-in-out infinite alternate;
+  }
+  .stars::after { animation-delay: 1.5s; transform: translate(5px, 3px); }
+  @keyframes twinkle { from{opacity:0.7} to{opacity:1} }
+
+  /* PAGES */
+  .page { position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;display:none;flex-direction:column;align-items:center;justify-content:center; }
+  .page.active { display:flex; }
+
+  /* ====== CHARACTER SELECT ====== */
+  #charSelect {
+    flex-direction: row;
+    gap: 0;
+  }
+
+  .player-side {
+    flex: 1; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .p1-side { background: linear-gradient(135deg, rgba(255,75,110,0.15), transparent); border-right: 2px solid rgba(255,75,110,0.3); }
+  .p2-side { background: linear-gradient(225deg, rgba(75,158,255,0.15), transparent); transform: rotate(180deg); }
+  .p2-side > * { transform: rotate(180deg); }
+
+  .player-label {
+    font-family: 'Boogaloo', cursive;
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px currentColor;
+  }
+  .p1-label { color: var(--p1); }
+  .p2-label { color: var(--p2); }
+
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    max-width: 400px;
+    width: 100%;
+  }
+
+  .char-btn {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    background: var(--card);
+    overflow: hidden;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .char-btn img {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 9px;
+  }
+  .char-btn:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.4); }
+  .char-btn.selected-p1 { border-color: var(--p1); box-shadow: 0 0 15px var(--p1); transform: scale(1.05); }
+  .char-btn.selected-p2 { border-color: var(--p2); box-shadow: 0 0 15px var(--p2); transform: scale(1.05); }
+
+  .char-emoji-fallback {
+    font-size: 2.5rem;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+  }
+
+  .ready-badge {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    padding: 8px 20px;
+    border-radius: 50px;
+    margin-top: 15px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .ready-badge.visible { opacity: 1; }
+  .p1-side .ready-badge { background: var(--p1); }
+  .p2-side .ready-badge { background: var(--p2); }
+
+  .vs-divider {
+    width: 80px; min-width: 80px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; z-index: 2;
+  }
+  .vs-text {
+    font-family: 'Boogaloo', cursive;
+    font-size: 3rem;
+    background: linear-gradient(var(--p1), var(--p2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: vsPulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes vsPulse { from{transform:scale(1)} to{transform:scale(1.1)} }
+
+  .start-btn {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.2rem;
+    padding: 12px 24px;
+    border-radius: 50px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold), var(--accent));
+    color: #1a0a2e;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(255,215,0,0.4);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .start-btn.ready { opacity: 1; pointer-events: all; animation: bounce 0.5s ease infinite alternate; }
+  @keyframes bounce { from{transform:scale(1)} to{transform:scale(1.05)} }
+
+  /* ====== GAME SELECT ====== */
+  #gameSelect {
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .arena-title {
+    font-family: 'Boogaloo', cursive;
+    font-size: clamp(2rem, 6vw, 4rem);
+    text-align: center;
+    background: linear-gradient(135deg, var(--p1), var(--gold), var(--p2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 5px;
+    animation: titleShimmer 2s linear infinite;
+    background-size: 200%;
+  }
+  @keyframes titleShimmer { from{background-position:0%} to{background-position:200%} }
+
+  .players-display {
+    display: flex; align-items: center; gap: 15px;
+    margin-bottom: 25px;
+  }
+  .player-avatar-small {
+    width: 60px; height: 60px;
+    border-radius: 50%; overflow: hidden;
+    border: 3px solid;
+  }
+  .player-avatar-small img { width:100%;height:100%;object-fit:cover; }
+  .vs-small { font-family:'Boogaloo',cursive;font-size:1.5rem; color: var(--gold); }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .game-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 15px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  .game-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, var(--p1), var(--p2));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .game-card:hover::before { opacity: 0.1; }
+  .game-card:hover { transform: translateY(-4px); border-color: var(--gold); box-shadow: 0 8px 25px rgba(255,215,0,0.2); }
+  .game-card:hover > * { position: relative; z-index: 1; }
+  .game-emoji { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+  .game-name { font-family: 'Boogaloo', cursive; font-size: 1rem; }
+  .game-players { font-size: 0.75rem; opacity: 0.7; margin-top: 4px; }
+
+  /* ====== GAME AREA ====== */
+  #gameArea {
+    display: none;
+    flex-direction: column;
+    position: fixed; top:0;left:0;width:100%;height:100%;
+    z-index: 10;
+    background: var(--bg);
+  }
+  #gameArea.active { display: flex; }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background: rgba(0,0,0,0.3);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    border: none; color: white;
+    font-family: 'Boogaloo', cursive;
+  }
+  .game-title-bar {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.4rem;
+    flex: 1; text-align: center;
+  }
+  .score-display {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Boogaloo', cursive; font-size: 1.1rem;
+  }
+  .score-p1 { color: var(--p1); }
+  .score-p2 { color: var(--p2); }
+  .score-sep { opacity: 0.5; }
+
+  .game-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* TURN INDICATOR */
+  .turn-banner {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    padding: 6px 20px;
+    border-radius: 50px;
+    z-index: 5;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  /* WIN OVERLAY */
+  .win-overlay {
+    display: none;
+    position: absolute; top:0;left:0;right:0;bottom:0;
+    background: rgba(0,0,0,0.85);
+    z-index: 20;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .win-overlay.show { display: flex; }
+  .win-emoji { font-size: 5rem; animation: winBounce 0.5s ease infinite alternate; }
+  @keyframes winBounce { from{transform:scale(1) rotate(-5deg)} to{transform:scale(1.1) rotate(5deg)} }
+  .win-text {
+    font-family: 'Boogaloo', cursive;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    text-align: center;
+  }
+  .win-sub { opacity: 0.7; font-size: 1rem; }
+  .win-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .win-btn {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    padding: 12px 25px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .win-btn:hover { transform: scale(1.05); }
+  .btn-rematch { background: var(--green); color: #000; }
+  .btn-menu { background: rgba(255,255,255,0.2); color: white; }
+
+  /* CONFETTI */
+  .confetti-piece {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    animation: confettiFall 1s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(60vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ====== TIC TAC TOE ====== */
+  #ttt-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 10px;
+    max-width: min(80vw, 80vh, 400px);
+    width: 100%;
+    aspect-ratio: 1;
+  }
+  .ttt-cell {
+    background: var(--card);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: clamp(2rem, 8vw, 4rem);
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    aspect-ratio: 1;
+  }
+  .ttt-cell:hover:not(.taken) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+  .ttt-cell.x { color: var(--p1); }
+  .ttt-cell.o { color: var(--p2); }
+  .ttt-cell.win-cell { animation: winCellPulse 0.4s ease infinite alternate; background: rgba(255,215,0,0.2); border-color: var(--gold); }
+  @keyframes winCellPulse { from{transform:scale(1)} to{transform:scale(1.05)} }
+
+  /* ====== CONNECT FOUR ====== */
+  #c4-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    max-height: 90vh;
+    padding: 10px;
+  }
+  #c4-cols {
+    display: flex; gap: 6px;
+  }
+  .c4-col-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 5px;
+    flex: 1;
+    min-width: 44px;
+    transition: all 0.15s;
+  }
+  .c4-col-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-3px); }
+  #c4-board {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background: #1e3a8a;
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .c4-cell {
+    width: clamp(36px, 8vw, 52px);
+    height: clamp(36px, 8vw, 52px);
+    border-radius: 50%;
+    background: var(--bg);
+    transition: background 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .c4-cell.p1 { background: var(--p1); box-shadow: inset 0 -3px 8px rgba(0,0,0,0.3); }
+  .c4-cell.p2 { background: var(--p2); box-shadow: inset 0 -3px 8px rgba(0,0,0,0.3); }
+  .c4-cell.win-cell { animation: c4Win 0.4s ease infinite alternate; }
+  @keyframes c4Win { from{transform:scale(1)} to{transform:scale(1.15)} }
+  .c4-cell.drop { animation: dropIn 0.2s ease-out; }
+  @keyframes dropIn { from{transform:scale(0)} to{transform:scale(1)} }
+
+  /* ====== DOTS AND BOXES ====== */
+  #dots-container {
+    padding: 10px;
+    touch-action: none;
+  }
+  #dots-svg { display: block; }
+  .dot-line {
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 6;
+    stroke-linecap: round;
+    cursor: pointer;
+    transition: stroke 0.1s;
+  }
+  .dot-line:hover { stroke: rgba(255,255,255,0.4); }
+  .dot-line.p1 { stroke: var(--p1); cursor: default; }
+  .dot-line.p2 { stroke: var(--p2); cursor: default; }
+  .dot-circle { fill: white; }
+  .box-fill-p1 { fill: rgba(255,75,110,0.35); }
+  .box-fill-p2 { fill: rgba(75,158,255,0.35); }
+
+  /* ====== ROCK PAPER SCISSORS ====== */
+  #rps-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+  }
+  .rps-arena {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    gap: 10px;
+  }
+  .rps-choice {
+    font-size: clamp(3rem, 12vw, 6rem);
+    min-width: 100px;
+    text-align: center;
+    animation: rpsReveal 0.5s ease;
+  }
+  @keyframes rpsReveal { from{transform:scale(0) rotate(-180deg)} to{transform:scale(1) rotate(0)} }
+  .rps-vs { font-family:'Boogaloo',cursive; font-size: 1.5rem; opacity: 0.5; }
+  .rps-buttons {
+    display: flex;
+    gap: 15px;
+  }
+  .rps-btn {
+    font-size: 2.5rem;
+    padding: 15px;
+    background: var(--card);
+    border: 3px solid transparent;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 70px;
+  }
+  .rps-btn:hover { transform: scale(1.1); border-color: var(--gold); }
+  .rps-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .rps-section-label {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1rem;
+    opacity: 0.7;
+  }
+  .rps-result-text {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.5rem;
+    text-align: center;
+    min-height: 2rem;
+  }
+  .rps-round-info { font-size: 0.9rem; opacity: 0.6; }
+
+  /* ====== PONG ====== */
+  #pong-canvas {
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.2);
+    display: block;
+    max-width: 100%;
+    max-height: 85vh;
+    touch-action: none;
+  }
+  .pong-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.5;
+  }
+
+  /* ====== MEMORY MATCH ====== */
+  #memory-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-height: 90vh;
+  }
+  #memory-board {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+  .mem-card {
+    width: clamp(45px, 9vw, 65px);
+    height: clamp(45px, 9vw, 65px);
+    perspective: 500px;
+    cursor: pointer;
+  }
+  .mem-card-inner {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.4s;
+    border-radius: 8px;
+  }
+  .mem-card.flipped .mem-card-inner { transform: rotateY(180deg); }
+  .mem-card-front, .mem-card-back {
+    position: absolute; top:0;left:0;width:100%;height:100%;
+    border-radius: 8px;
+    backface-visibility: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+  }
+  .mem-card-front { background: var(--card); border: 2px solid rgba(255,255,255,0.1); font-size: 1.5rem; }
+  .mem-card-back { background: linear-gradient(135deg, #3d2070, #1a4080); transform: rotateY(180deg); border: 2px solid rgba(255,255,255,0.15); }
+  .mem-card.matched .mem-card-back { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+
+  /* ====== WORD SCRAMBLE ====== */
+  #scramble-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 500px;
+    width: 100%;
+  }
+  .scramble-word {
+    font-family: 'Boogaloo', cursive;
+    font-size: clamp(2rem, 8vw, 4rem);
+    letter-spacing: 8px;
+    text-align: center;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(255,215,0,0.5);
+  }
+  .scramble-hint { opacity: 0.6; font-size: 0.9rem; }
+  .scramble-input {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.5rem;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: var(--card);
+    color: white;
+    text-align: center;
+    outline: none;
+    width: 100%;
+    max-width: 280px;
+  }
+  .scramble-input:focus { border-color: var(--gold); }
+  .scramble-submit {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.2rem;
+    padding: 12px 30px;
+    border-radius: 50px;
+    border: none;
+    background: var(--green);
+    color: #000;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .scramble-submit:hover { transform: scale(1.05); }
+  .scramble-timer {
+    font-family: 'Boogaloo', cursive;
+    font-size: 3rem;
+    color: var(--accent);
+  }
+  .scramble-turn-label {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    padding: 8px 20px;
+    border-radius: 50px;
+  }
+  .scramble-current-p {
+    font-size: 0.85rem; opacity: 0.7; text-align:center;
+  }
+
+  /* ====== TRIVIA ====== */
+  #trivia-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    max-width: 600px;
+    width: 100%;
+  }
+  .trivia-question {
+    font-family: 'Boogaloo', cursive;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .trivia-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .trivia-opt {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1rem;
+    padding: 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: var(--card);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .trivia-opt:hover { border-color: var(--gold); transform: scale(1.02); }
+  .trivia-opt.correct { background: rgba(0,230,118,0.3); border-color: var(--green); }
+  .trivia-opt.wrong { background: rgba(255,75,110,0.3); border-color: var(--p1); }
+  .trivia-whose-turn {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    padding: 8px 20px;
+    border-radius: 50px;
+  }
+  .trivia-timer {
+    font-family: 'Boogaloo', cursive;
+    font-size: 2.5rem;
+    color: var(--accent);
+  }
+
+  /* ====== NIM ====== */
+  #nim-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    max-width: 500px;
+    width: 100%;
+  }
+  .nim-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+  .nim-stick {
+    width: 16px;
+    height: clamp(40px, 8vw, 70px);
+    background: linear-gradient(to right, #e8c17a, #d4a843, #e8c17a);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  .nim-stick::before {
+    content: '';
+    position: absolute; top:3px; left:3px; right:3px; height:30%;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+  }
+  .nim-stick:hover { transform: translateY(-5px) scale(1.1); filter: brightness(1.3); }
+  .nim-stick.removed { opacity: 0; pointer-events: none; }
+  .nim-row-label {
+    font-family: 'Boogaloo', cursive;
+    opacity: 0.5;
+    width: 20px;
+    text-align: right;
+  }
+  .nim-take-btn {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    padding: 12px 30px;
+    border-radius: 50px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nim-take-btn:hover { transform: scale(1.05); }
+  .nim-rule { font-size: 0.8rem; opacity: 0.5; text-align: center; }
+
+  /* ====== COIN FLIP ====== */
+  #coinflip-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    max-width: 400px;
+    width: 100%;
+  }
+  .coin {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ffaa00, #ffd700);
+    box-shadow: 0 0 30px rgba(255,215,0,0.5), 4px 4px 15px rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .coin:hover { transform: scale(1.05); }
+  .coin.flipping { animation: coinSpin 0.8s ease-out; }
+  @keyframes coinSpin {
+    0% { transform: rotateY(0); }
+    50% { transform: rotateY(900deg) scale(0.8); }
+    100% { transform: rotateY(1800deg); }
+  }
+  .coinflip-result {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.5rem;
+    text-align: center;
+    min-height: 2rem;
+  }
+  .coinflip-desc { opacity: 0.6; font-size: 0.9rem; text-align: center; }
+  .flip-btn {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.2rem;
+    padding: 12px 30px;
+    border-radius: 50px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold), var(--accent));
+    color: #000;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .flip-btn:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(255,215,0,0.5); }
+
+  /* ====== REACTIONS GAME ====== */
+  #reaction-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    max-width: 500px;
+    width: 100%;
+  }
+  .reaction-light {
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 4px solid rgba(255,255,255,0.1);
+    transition: all 0.1s;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem;
+  }
+  .reaction-light.go { background: var(--green); box-shadow: 0 0 60px var(--green); animation: lightPulse 0.2s ease; }
+  .reaction-light.wait { background: var(--p1); box-shadow: 0 0 30px var(--p1); }
+  @keyframes lightPulse { from{transform:scale(0.9)} to{transform:scale(1)} }
+  .reaction-info {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  .reaction-tap-btns {
+    display: flex; gap: 20px;
+  }
+  .reaction-tap-btn {
+    font-family: 'Boogaloo', cursive;
+    font-size: 1rem;
+    padding: 15px 30px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .reaction-tap-btn:active { transform: scale(0.9); }
+  .reaction-tap-p1 { background: var(--p1); color: white; }
+  .reaction-tap-p2 { background: var(--p2); color: white; }
+  .reaction-round { opacity: 0.6; font-size: 0.9rem; }
+
+  /* UTILITY */
+  .hidden { display: none !important; }
+  .ta-center { text-align: center; }
+
+  .score-boxes {
+    display: flex; gap: 15px; margin-bottom: 10px;
+  }
+  .score-box {
+    background: var(--card);
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem;
+    border: 2px solid;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .score-box.p1 { border-color: var(--p1); color: var(--p1); }
+  .score-box.p2 { border-color: var(--p2); color: var(--p2); }
+  .score-box-num { font-size: 1.5rem; }
+  .score-box-avatar { width: 28px; height: 28px; border-radius: 50%; overflow:hidden; }
+  .score-box-avatar img { width:100%;height:100%;object-fit:cover; }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<!-- ============ CHARACTER SELECT PAGE ============ -->
+<div class="page active" id="charSelect">
+  <div class="player-side p1-side">
+    <div class="player-label p1-label">🔴 PLAYER 1</div>
+    <p style="opacity:0.7;font-size:0.9rem;margin-bottom:15px;">Pick your fighter!</p>
+    <div class="char-grid" id="p1Grid"></div>
+    <div class="ready-badge" id="p1Ready">✅ READY!</div>
+  </div>
+
+  <div class="vs-divider">
+    <div class="vs-text">VS</div>
+    <button class="start-btn" id="startBtn" onclick="goToGameSelect()">LET'S GO! 🎮</button>
+  </div>
+
+  <div class="player-side p2-side">
+    <div class="player-label p2-label">🔵 PLAYER 2</div>
+    <p style="opacity:0.7;font-size:0.9rem;margin-bottom:15px;">Pick your fighter!</p>
+    <div class="char-grid" id="p2Grid"></div>
+    <div class="ready-badge" id="p2Ready">✅ READY!</div>
+  </div>
+</div>
+
+<!-- ============ GAME SELECT PAGE ============ -->
+<div class="page" id="gameSelect">
+  <div class="arena-title">🎮 PARTY ARENA 🎮</div>
+  <div class="players-display">
+    <div class="player-avatar-small" id="p1AvatarSmall" style="border-color:var(--p1)">
+      <img id="p1AvatarImgSmall" src="" alt="P1">
+    </div>
+    <span class="vs-small">⚔️</span>
+    <div class="player-avatar-small" id="p2AvatarSmall" style="border-color:var(--p2)">
+      <img id="p2AvatarImgSmall" src="" alt="P2">
+    </div>
+  </div>
+  <div class="games-grid" id="gamesGrid"></div>
+</div>
+
+<!-- ============ GAME AREA ============ -->
+<div id="gameArea">
+  <div class="game-header">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="game-title-bar" id="gameTitleBar"></div>
+    <div class="score-display">
+      <span class="score-p1" id="headerScore1">0</span>
+      <span class="score-sep">:</span>
+      <span class="score-p2" id="headerScore2">0</span>
+    </div>
+  </div>
+  <div class="game-body" id="gameBody">
+    <div class="turn-banner" id="turnBanner"></div>
+    <!-- game content injected here -->
+    <div class="win-overlay" id="winOverlay">
+      <div id="confettiContainer"></div>
+      <div class="win-emoji" id="winEmoji"></div>
+      <div class="win-text" id="winText"></div>
+      <div class="win-sub" id="winSub"></div>
+      <div class="win-btns">
+        <button class="win-btn btn-rematch" onclick="rematch()">🔄 Rematch!</button>
+        <button class="win-btn btn-menu" onclick="goToGameSelect()">🏠 Game Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====================== STATE ======================
+const chars = [
+  { id:1,  src: 'BILDE1.png',  emoji: '🐱' },
+  { id:2,  src: 'BILDE2.png',  emoji: '🦊' },
+  { id:3,  src: 'BILDE3.png',  emoji: '🐸' },
+  { id:4,  src: 'BILDE4.PNG',  emoji: '🦁' },
+  { id:5,  src: 'BILDE5.PNG',  emoji: '🐧' },
+  { id:6,  src: 'BILDE6.PNG',  emoji: '🐯' },
+  { id:7,  src: 'BILDE7.webp',  emoji: '🦄' },
+  { id:8,  src: 'BILDE8.PNG',  emoji: '🐻' },
+  { id:9,  src: 'BILDE9.PNG',  emoji: '🐼' },
+  { id:10, src: 'BILDE10.PNG', emoji: '🦋' },
+];
+
+let p1Char = null, p2Char = null;
+let currentGame = null;
+let scores = {p1: 0, p2: 0};
+let currentGameId = '';
+
+// ====================== CHARACTER SELECT ======================
+function buildCharGrid(containerId, player) {
+  const grid = document.getElementById(containerId);
+  chars.forEach(c => {
+    const btn = document.createElement('div');
+    btn.className = 'char-btn';
+    btn.dataset.id = c.id;
+    // Try image, fallback emoji
+    btn.innerHTML = `<img src="${c.src}" alt="Char ${c.id}" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class='char-emoji-fallback' style='display:none'>${c.emoji}</div>`;
+    btn.addEventListener('click', () => selectChar(player, c, btn));
+    grid.appendChild(btn);
+  });
+}
+
+function selectChar(player, char, btn) {
+  const otherId = player === 1 ? p2Char?.id : p1Char?.id;
+  if(char.id === otherId) return; // can't pick same char
+
+  const prevClass = player === 1 ? 'selected-p1' : 'selected-p2';
+  document.querySelectorAll(`.${prevClass}`).forEach(el => el.classList.remove(prevClass));
+  btn.classList.add(prevClass);
+
+  if(player === 1) p1Char = char;
+  else p2Char = char;
+
+  document.getElementById(`p${player}Ready`).classList.add('visible');
+  checkBothReady();
+}
+
+function checkBothReady() {
+  const startBtn = document.getElementById('startBtn');
+  if(p1Char && p2Char) startBtn.classList.add('ready');
+  else startBtn.classList.remove('ready');
+}
+
+function getCharImg(char) {
+  // returns an img element or emoji span
+  return `<img src="${char.src}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='inline'"><span style="display:none">${char.emoji}</span>`;
+}
+
+// ====================== NAV ======================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('gameArea').classList.remove('active');
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function goToGameSelect() {
+  if(!p1Char || !p2Char) return;
+  // update small avatars
+  const p1s = document.getElementById('p1AvatarImgSmall');
+  const p2s = document.getElementById('p2AvatarImgSmall');
+  p1s.src = p1Char.src; p1s.onerror = () => {p1s.style.display='none'};
+  p2s.src = p2Char.src; p2s.onerror = () => {p2s.style.display='none'};
+  showPage('gameSelect');
+  scores = {p1: 0, p2: 0};
+}
+
+function goBack() {
+  stopCurrentGame();
+  showPage('gameSelect');
+}
+
+function stopCurrentGame() {
+  if(currentGame?.stop) currentGame.stop();
+  currentGame = null;
+}
+
+// ====================== GAMES LIST ======================
+const GAMES = [
+  {id:'ttt', name:'Tic Tac Toe', emoji:'❌', desc:'Classic 3×3'},
+  {id:'c4', name:'Connect 4', emoji:'🔴', desc:'4 in a row'},
+  {id:'dots', name:'Dots & Boxes', emoji:'🔲', desc:'Claim squares'},
+  {id:'memory', name:'Memory Match', emoji:'🃏', desc:'Find the pairs'},
+  {id:'rps', name:'Rock Paper Scissors', emoji:'✂️', desc:'Best of 5'},
+  {id:'nim', name:'Nim', emoji:'🥢', desc:'Last stick loses'},
+  {id:'scramble', name:'Word Scramble', emoji:'🔤', desc:'Unscramble fastest'},
+  {id:'trivia', name:'Trivia Battle', emoji:'🧠', desc:'Who knows more?'},
+  {id:'pong', name:'Pong', emoji:'🏓', desc:'Classic Pong'},
+  {id:'coinflip', name:'Coin Flip Derby', emoji:'🪙', desc:'Best of 7'},
+  {id:'reaction', name:'Reaction Duel', emoji:'⚡', desc:'Fastest finger wins'},
+];
+
+function buildGamesGrid() {
+  const grid = document.getElementById('gamesGrid');
+  GAMES.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.innerHTML = `<span class='game-emoji'>${g.emoji}</span><div class='game-name'>${g.name}</div><div class='game-players'>${g.desc}</div>`;
+    card.addEventListener('click', () => startGame(g));
+    grid.appendChild(card);
+  });
+}
+
+// ====================== START GAME ======================
+function startGame(game) {
+  currentGameId = game.id;
+  document.getElementById('gameTitleBar').textContent = `${game.emoji} ${game.name}`;
+  document.getElementById('headerScore1').textContent = scores.p1;
+  document.getElementById('headerScore2').textContent = scores.p2;
+  document.getElementById('winOverlay').classList.remove('show');
+  document.getElementById('confettiContainer').innerHTML = '';
+
+  const body = document.getElementById('gameBody');
+  // remove old game content but keep overlay and turn banner
+  Array.from(body.children).forEach(c => {
+    if(c.id !== 'winOverlay' && c.id !== 'turnBanner' && c.id !== 'confettiContainer') c.remove();
+  });
+
+  document.getElementById('gameArea').classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+  stopCurrentGame();
+
+  switch(game.id) {
+    case 'ttt': currentGame = initTTT(); break;
+    case 'c4': currentGame = initC4(); break;
+    case 'dots': currentGame = initDots(); break;
+    case 'memory': currentGame = initMemory(); break;
+    case 'rps': currentGame = initRPS(); break;
+    case 'nim': currentGame = initNim(); break;
+    case 'scramble': currentGame = initScramble(); break;
+    case 'trivia': currentGame = initTrivia(); break;
+    case 'pong': currentGame = initPong(); break;
+    case 'coinflip': currentGame = initCoinFlip(); break;
+    case 'reaction': currentGame = initReaction(); break;
+  }
+}
+
+function rematch() {
+  document.getElementById('winOverlay').classList.remove('show');
+  const g = GAMES.find(g => g.id === currentGameId);
+  if(g) startGame(g);
+}
+
+// ====================== HELPERS ======================
+function setTurnBanner(player, text) {
+  const banner = document.getElementById('turnBanner');
+  banner.textContent = text || `${player === 1 ? '🔴 P1' : '🔵 P2'}'s Turn`;
+  banner.style.background = player === 1 ? 'rgba(255,75,110,0.3)' : 'rgba(75,158,255,0.3)';
+  banner.style.color = player === 1 ? 'var(--p1)' : 'var(--p2)';
+  banner.style.border = `1px solid ${player === 1 ? 'var(--p1)' : 'var(--p2)'}`;
+}
+
+function showWin(player, message) {
+  if(player === 1) scores.p1++;
+  else if(player === 2) scores.p2++;
+  else {} // draw
+
+  document.getElementById('headerScore1').textContent = scores.p1;
+  document.getElementById('headerScore2').textContent = scores.p2;
+
+  const overlay = document.getElementById('winOverlay');
+  const emojis = player === 1 ? ['🎉','🏆','🔥','💪','😎'] : ['🎊','🥇','⚡','🌟','🤩'];
+  document.getElementById('winEmoji').textContent = player ? emojis[Math.floor(Math.random()*emojis.length)] : '🤝';
+
+  const funMessages1 = ['Player 1 DOMINATES!', 'P1 is UNSTOPPABLE!', 'Red team for the WIN!', 'P1 is GOATed fr fr!'];
+  const funMessages2 = ['Player 2 is ELITE!', 'P2 SMASHES it!', 'Blue team takes it!', 'P2 ate and left no crumbs!'];
+  const drawMessages = ['Too evenly matched!', 'The legends both tie!', 'A DRAW! Rematch?!'];
+
+  document.getElementById('winText').textContent = message ||
+    (player === 1 ? funMessages1[Math.floor(Math.random()*funMessages1.length)] :
+     player === 2 ? funMessages2[Math.floor(Math.random()*funMessages2.length)] :
+     drawMessages[Math.floor(Math.random()*drawMessages.length)]);
+  document.getElementById('winText').style.color = player === 1 ? 'var(--p1)' : player === 2 ? 'var(--p2)' : 'var(--gold)';
+  document.getElementById('winSub').textContent = `Score: ${scores.p1} - ${scores.p2}`;
+  overlay.classList.add('show');
+
+  // confetti
+  const cc = document.getElementById('confettiContainer');
+  cc.innerHTML = '';
+  const colors = ['#FF4B6E','#4B9EFF','#FFD700','#FF9500','#00E676','#FF69B4'];
+  for(let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*20}%;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*0.8}s;animation-duration:${0.8+Math.random()*0.8}s;transform:rotate(${Math.random()*360}deg)`;
+    cc.appendChild(piece);
+  }
+}
+
+function injectDiv(id, content) {
+  const div = document.createElement('div');
+  div.id = id;
+  div.innerHTML = content;
+  document.getElementById('gameBody').appendChild(div);
+  return div;
+}
+
+// ====================== TIC TAC TOE ======================
+function initTTT() {
+  let board = Array(9).fill(null);
+  let turn = 1;
+  setTurnBanner(1);
+
+  const div = injectDiv('ttt-board', '');
+  div.id = 'ttt-board';
+  div.className = '';
+  div.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;max-width:min(80vw,80vh,400px);width:100%;aspect-ratio:1';
+
+  for(let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'ttt-cell';
+    cell.dataset.i = i;
+    cell.addEventListener('click', () => tttClick(i, board, turn));
+    div.appendChild(cell);
+  }
+
+  function tttClick(i, b, t) {
+    if(b[i] || document.getElementById('winOverlay').classList.contains('show')) return;
+    b[i] = t;
+    const cells = div.querySelectorAll('.ttt-cell');
+    const cell = cells[i];
+    cell.classList.add('taken');
+    cell.innerHTML = t === 1 ? getCharImg(p1Char) : getCharImg(p2Char);
+    cell.style.padding = '6px';
+    cell.querySelector('img').style.cssText = 'width:100%;height:100%;border-radius:8px;object-fit:cover';
+
+    const winner = checkTTT(b);
+    if(winner) {
+      winner.cells.forEach(ci => cells[ci].classList.add('win-cell'));
+      setTimeout(() => showWin(winner.player), 400);
+    } else if(b.every(Boolean)) {
+      setTimeout(() => showWin(0, "It's a DRAW! 🤝"), 400);
+    } else {
+      turn = t === 1 ? 2 : 1;
+      setTurnBanner(turn);
+    }
+  }
+
+  // fix closure
+  div.querySelectorAll('.ttt-cell').forEach((cell, i) => {
+    cell.addEventListener('click', () => {
+      if(board[i] || document.getElementById('winOverlay').classList.contains('show')) return;
+      board[i] = turn;
+      cell.classList.add('taken');
+      cell.innerHTML = turn === 1 ? getCharImg(p1Char) : getCharImg(p2Char);
+      cell.style.padding = '6px';
+      const img = cell.querySelector('img');
+      if(img) img.style.cssText = 'width:100%;height:100%;border-radius:8px;object-fit:cover';
+
+      const winner = checkTTT(board);
+      if(winner) {
+        const cells = div.querySelectorAll('.ttt-cell');
+        winner.cells.forEach(ci => cells[ci].classList.add('win-cell'));
+        setTimeout(() => showWin(winner.player), 400);
+      } else if(board.every(Boolean)) {
+        setTimeout(() => showWin(0, "It's a DRAW! 🤝"), 400);
+      } else {
+        turn = turn === 1 ? 2 : 1;
+        setTurnBanner(turn);
+      }
+    });
+  });
+
+  return {};
+}
+
+function checkTTT(b) {
+  const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(const line of lines) {
+    const [a,c,d] = line;
+    if(b[a] && b[a] === b[c] && b[a] === b[d]) return {player: b[a], cells: line};
+  }
+  return null;
+}
+
+// ====================== CONNECT 4 ======================
+function initC4() {
+  const ROWS = 6, COLS = 7;
+  let board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+  let turn = 1;
+  setTurnBanner(1);
+
+  const container = document.createElement('div');
+  container.id = 'c4-container';
+  container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;max-height:90vh;padding:10px';
+
+  const colBtns = document.createElement('div');
+  colBtns.id = 'c4-cols';
+  colBtns.style.cssText = 'display:flex;gap:6px;width:100%;max-width:430px';
+
+  const boardEl = document.createElement('div');
+  boardEl.id = 'c4-board';
+  boardEl.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:6px;background:#1e3a8a;padding:10px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.5)';
+
+  const cells = [];
+  for(let r = 0; r < ROWS; r++) {
+    cells[r] = [];
+    for(let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'c4-cell';
+      cell.style.cssText = `width:clamp(36px,8vw,52px);height:clamp(36px,8vw,52px);border-radius:50%;background:var(--bg);transition:background 0.15s`;
+      boardEl.appendChild(cell);
+      cells[r][c] = cell;
+    }
+  }
+
+  for(let c = 0; c < COLS; c++) {
+    const btn = document.createElement('button');
+    btn.className = 'c4-col-btn';
+    btn.style.cssText = 'background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:white;cursor:pointer;font-size:1.2rem;padding:5px;flex:1;min-width:44px';
+    btn.textContent = '▼';
+    const col = c;
+    btn.addEventListener('click', () => c4Drop(col));
+    colBtns.appendChild(btn);
+  }
+
+  container.appendChild(colBtns);
+  container.appendChild(boardEl);
+  document.getElementById('gameBody').appendChild(container);
+
+  function c4Drop(col) {
+    if(document.getElementById('winOverlay').classList.contains('show')) return;
+    let row = -1;
+    for(let r = ROWS-1; r >= 0; r--) {
+      if(board[r][col] === 0) { row = r; break; }
+    }
+    if(row === -1) return;
+
+    board[row][col] = turn;
+    const cell = cells[row][col];
+    cell.style.background = turn === 1 ? 'var(--p1)' : 'var(--p2)';
+    cell.style.boxShadow = 'inset 0 -3px 8px rgba(0,0,0,0.3)';
+    cell.style.animation = 'dropIn 0.2s ease-out';
+
+    const win = checkC4(board, row, col, turn);
+    if(win) {
+      win.forEach(([r,c]) => { cells[r][c].style.animation = 'c4Win 0.4s ease infinite alternate'; });
+      setTimeout(() => showWin(turn), 300);
+    } else if(board[0].every(v => v !== 0)) {
+      setTimeout(() => showWin(0, "Board's full! Draw! 🤝"), 300);
+    } else {
+      turn = turn === 1 ? 2 : 1;
+      setTurnBanner(turn);
+    }
+  }
+
+  return {};
+}
+
+function checkC4(board, row, col, p) {
+  const ROWS=6,COLS=7;
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for(const [dr,dc] of dirs) {
+    let cells = [[row,col]];
+    for(let d=1;d<4;d++){const r=row+dr*d,c=col+dc*d;if(r>=0&&r<ROWS&&c>=0&&c<COLS&&board[r][c]===p)cells.push([r,c]);else break;}
+    for(let d=1;d<4;d++){const r=row-dr*d,c=col-dc*d;if(r>=0&&r<ROWS&&c>=0&&c<COLS&&board[r][c]===p)cells.push([r,c]);else break;}
+    if(cells.length>=4) return cells.slice(0,4);
+  }
+  return null;
+}
+
+// ====================== DOTS AND BOXES ======================
+function initDots() {
+  const SIZE = 4; // 4x4 grid = 4x4 boxes
+  const N = SIZE; // dots per side
+  let turn = 1;
+  let boxOwner = Array(N).fill(null).map(()=>Array(N).fill(0));
+  let hLines = Array(N+1).fill(null).map(()=>Array(N).fill(false));
+  let vLines = Array(N).fill(null).map(()=>Array(N+1).fill(false));
+  let pScores = {1:0, 2:0};
+  setTurnBanner(1);
+
+  const S = Math.min(window.innerWidth*0.85, window.innerHeight*0.75, 400) / (N+0.5);
+  const pad = 30;
+  const W = S*N + pad*2, H = S*N + pad*2;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  svg.style.cursor = 'pointer';
+
+  // Box fills
+  const boxEls = Array(N).fill(null).map(()=>Array(N).fill(null));
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++) {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',pad+c*S+2); rect.setAttribute('y',pad+r*S+2);
+    rect.setAttribute('width',S-4); rect.setAttribute('height',S-4);
+    rect.setAttribute('rx',4); rect.setAttribute('fill','none');
+    svg.appendChild(rect); boxEls[r][c] = rect;
+  }
+
+  // H lines
+  for(let r=0;r<=N;r++) for(let c=0;c<N;c++) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',pad+c*S+8); line.setAttribute('y1',pad+r*S);
+    line.setAttribute('x2',pad+(c+1)*S-8); line.setAttribute('y2',pad+r*S);
+    line.setAttribute('stroke','rgba(255,255,255,0.15)'); line.setAttribute('stroke-width',6);
+    line.setAttribute('stroke-linecap','round'); line.style.cursor='pointer';
+    line.addEventListener('click',()=>claimHLine(r,c,line));
+    line.addEventListener('mouseenter',()=>{if(!hLines[r][c])line.setAttribute('stroke','rgba(255,255,255,0.5)')});
+    line.addEventListener('mouseleave',()=>{if(!hLines[r][c])line.setAttribute('stroke','rgba(255,255,255,0.15)')});
+    svg.appendChild(line);
+  }
+
+  // V lines
+  for(let r=0;r<N;r++) for(let c=0;c<=N;c++) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',pad+c*S); line.setAttribute('y1',pad+r*S+8);
+    line.setAttribute('x2',pad+c*S); line.setAttribute('y2',pad+(r+1)*S-8);
+    line.setAttribute('stroke','rgba(255,255,255,0.15)'); line.setAttribute('stroke-width',6);
+    line.setAttribute('stroke-linecap','round'); line.style.cursor='pointer';
+    line.addEventListener('click',()=>claimVLine(r,c,line));
+    line.addEventListener('mouseenter',()=>{if(!vLines[r][c])line.setAttribute('stroke','rgba(255,255,255,0.5)')});
+    line.addEventListener('mouseleave',()=>{if(!vLines[r][c])line.setAttribute('stroke','rgba(255,255,255,0.15)')});
+    svg.appendChild(line);
+  }
+
+  // Dots
+  for(let r=0;r<=N;r++) for(let c=0;c<=N;c++) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',pad+c*S); circle.setAttribute('cy',pad+r*S);
+    circle.setAttribute('r',5); circle.setAttribute('fill','white');
+    svg.appendChild(circle);
+  }
+
+  const container = document.createElement('div');
+  container.id = 'dots-container';
+  container.style.cssText = 'padding:10px;display:flex;flex-direction:column;align-items:center;gap:10px';
+
+  const scoreDiv = document.createElement('div');
+  scoreDiv.className = 'score-boxes';
+  scoreDiv.innerHTML = `<div class='score-box p1'><span>🔴</span><span class='score-box-num' id='dots-s1'>0</span></div>
+    <div style='font-family:Boogaloo,cursive;opacity:0.5;align-self:center'>BOXES</div>
+    <div class='score-box p2'><span>🔵</span><span class='score-box-num' id='dots-s2'>0</span></div>`;
+
+  container.appendChild(scoreDiv);
+  container.appendChild(svg);
+  document.getElementById('gameBody').appendChild(container);
+
+  function checkBoxes(claimedByPlayer) {
+    let gained = 0;
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++) {
+      if(boxOwner[r][c]===0 && hLines[r][c] && hLines[r+1][c] && vLines[r][c] && vLines[r][c+1]) {
+        boxOwner[r][c] = claimedByPlayer;
+        pScores[claimedByPlayer]++;
+        gained++;
+        boxEls[r][c].setAttribute('fill', claimedByPlayer===1 ? 'rgba(255,75,110,0.4)' : 'rgba(75,158,255,0.4)');
+      }
+    }
+    document.getElementById('dots-s1').textContent = pScores[1];
+    document.getElementById('dots-s2').textContent = pScores[2];
+    return gained;
+  }
+
+  function afterClaim(line, r, c, isH) {
+    line.setAttribute('stroke', turn===1 ? 'var(--p1)' : 'var(--p2)');
+    const gained = checkBoxes(turn);
+    const totalBoxes = N*N;
+    const filled = Object.values(boxOwner.flat ? boxOwner.flat() : boxOwner.reduce((a,b)=>a.concat(b),[])).filter(v=>v>0).length;
+    const allFilled = pScores[1]+pScores[2] === totalBoxes;
+    if(allFilled) {
+      const winner = pScores[1]>pScores[2]?1:pScores[2]>pScores[1]?2:0;
+      setTimeout(()=>showWin(winner, winner?`Player ${winner} claims more boxes!`:'Equal boxes! DRAW!'),300);
+    } else if(gained===0) {
+      turn = turn===1?2:1;
+      setTurnBanner(turn);
+    }
+    // else keep turn (bonus for completing a box)
+  }
+
+  function claimHLine(r,c,line) {
+    if(hLines[r][c]||document.getElementById('winOverlay').classList.contains('show')) return;
+    hLines[r][c]=true; afterClaim(line,r,c,true);
+  }
+  function claimVLine(r,c,line) {
+    if(vLines[r][c]||document.getElementById('winOverlay').classList.contains('show')) return;
+    vLines[r][c]=true; afterClaim(line,r,c,false);
+  }
+
+  return {};
+}
+
+// ====================== MEMORY MATCH ======================
+function initMemory() {
+  const EMOJIS = ['🍕','🌈','🦊','🎸','🚀','🦋','🍦','🎮','🌺','🦁','⚡','🎯'];
+  const pairs = [...EMOJIS,...EMOJIS].sort(()=>Math.random()-0.5);
+  let turn = 1;
+  let pScores = {1:0,2:0};
+  let flipped = [];
+  let matched = [];
+  let locked = false;
+  setTurnBanner(1);
+
+  const container = document.createElement('div');
+  container.id = 'memory-container';
+  container.style.cssText = 'padding:10px;display:flex;flex-direction:column;align-items:center;gap:10px;max-height:90vh';
+
+  const scoreDiv = document.createElement('div');
+  scoreDiv.className = 'score-boxes';
+  scoreDiv.innerHTML = `<div class='score-box p1'><span>🔴</span><span class='score-box-num' id='mem-s1'>0</span></div>
+    <div style='font-family:Boogaloo,cursive;opacity:0.5;align-self:center'>PAIRS</div>
+    <div class='score-box p2'><span>🔵</span><span class='score-box-num' id='mem-s2'>0</span></div>`;
+
+  const board = document.createElement('div');
+  board.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:6px';
+
+  pairs.forEach((emoji, i) => {
+    const card = document.createElement('div');
+    card.className = 'mem-card';
+    card.style.cssText = 'width:clamp(45px,9vw,65px);height:clamp(45px,9vw,65px);perspective:500px;cursor:pointer';
+    card.innerHTML = `<div class='mem-card-inner' style='width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.4s;border-radius:8px'>
+      <div class='mem-card-front' style='position:absolute;top:0;left:0;width:100%;height:100%;border-radius:8px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;background:var(--card);border:2px solid rgba(255,255,255,0.1);font-size:1.5rem'>🎴</div>
+      <div class='mem-card-back' style='position:absolute;top:0;left:0;width:100%;height:100%;border-radius:8px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3d2070,#1a4080);transform:rotateY(180deg);border:2px solid rgba(255,255,255,0.15);font-size:1.8rem'>${emoji}</div>
+    </div>`;
+    card.addEventListener('click', () => memFlip(i, card, emoji));
+    board.appendChild(card);
+  });
+
+  container.appendChild(scoreDiv);
+  container.appendChild(board);
+  document.getElementById('gameBody').appendChild(container);
+
+  function memFlip(i, card, emoji) {
+    if(locked||matched.includes(i)||flipped.some(f=>f.i===i)||document.getElementById('winOverlay').classList.contains('show')) return;
+    card.querySelector('.mem-card-inner').style.transform = 'rotateY(180deg)';
+    flipped.push({i, card, emoji});
+    if(flipped.length === 2) {
+      locked = true;
+      setTimeout(() => {
+        if(flipped[0].emoji === flipped[1].emoji) {
+          flipped.forEach(f => { matched.push(f.i); f.card.querySelector('.mem-card-back').style.cssText += ';border-color:var(--gold);box-shadow:0 0 10px var(--gold)'; });
+          pScores[turn]++;
+          document.getElementById(`mem-s${turn}`).textContent = pScores[turn];
+          if(matched.length === pairs.length) {
+            const winner = pScores[1]>pScores[2]?1:pScores[2]>pScores[1]?2:0;
+            setTimeout(()=>showWin(winner),300);
+          }
+        } else {
+          flipped.forEach(f => f.card.querySelector('.mem-card-inner').style.transform = '');
+          turn = turn===1?2:1;
+          setTurnBanner(turn);
+        }
+        flipped = []; locked = false;
+      }, 900);
+    }
+  }
+
+  return {};
+}
+
+// ====================== ROCK PAPER SCISSORS ======================
+function initRPS() {
+  const MAX_ROUNDS = 5;
+  let round = 1;
+  let p1Choice = null, p2Choice = null;
+  let wins = {1:0, 2:0};
+  setTurnBanner(1, '🔴 P1: Pick your weapon!');
+
+  const container = document.createElement('div');
+  container.id = 'rps-container';
+  container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:500px;padding:20px';
+
+  const roundInfo = document.createElement('div');
+  roundInfo.className = 'rps-round-info';
+
+  const arena = document.createElement('div');
+  arena.style.cssText = 'display:flex;align-items:center;justify-content:space-around;width:100%;gap:10px';
+  arena.innerHTML = `<div style='text-align:center'><div style='font-size:0.9rem;color:var(--p1);margin-bottom:5px'>🔴 P1</div><div id='rps-c1' style='font-size:5rem;min-width:100px;text-align:center'>❓</div></div>
+    <div style='font-family:Boogaloo,cursive;font-size:1.5rem;opacity:0.5'>VS</div>
+    <div style='text-align:center'><div style='font-size:0.9rem;color:var(--p2);margin-bottom:5px'>🔵 P2</div><div id='rps-c2' style='font-size:5rem;min-width:100px;text-align:center'>❓</div></div>`;
+
+  const resultText = document.createElement('div');
+  resultText.className = 'rps-result-text';
+  resultText.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.5rem;text-align:center;min-height:2rem';
+
+  const p1Section = document.createElement('div');
+  p1Section.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;border-top:1px solid rgba(255,75,110,0.3);width:100%;padding-top:10px';
+  p1Section.innerHTML = `<div style='font-family:Boogaloo,cursive;font-size:1rem;color:var(--p1)'>🔴 P1 - Choose!</div>
+    <div style='display:flex;gap:15px' id='rps-p1-btns'>
+      <button class='rps-btn' data-p='1' data-c='✊'>✊</button>
+      <button class='rps-btn' data-p='1' data-c='🖐️'>🖐️</button>
+      <button class='rps-btn' data-p='1' data-c='✌️'>✌️</button>
+    </div>`;
+
+  const p2Section = document.createElement('div');
+  p2Section.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;border-top:1px solid rgba(75,158,255,0.3);width:100%;padding-top:10px';
+  p2Section.innerHTML = `<div style='font-family:Boogaloo,cursive;font-size:1rem;color:var(--p2)'>🔵 P2 - Choose!</div>
+    <div style='display:flex;gap:15px' id='rps-p2-btns'>
+      <button class='rps-btn' data-p='2' data-c='✊'>✊</button>
+      <button class='rps-btn' data-p='2' data-c='🖐️'>🖐️</button>
+      <button class='rps-btn' data-p='2' data-c='✌️'>✌️</button>
+    </div>`;
+
+  container.appendChild(roundInfo);
+  container.appendChild(arena);
+  container.appendChild(resultText);
+  container.appendChild(p1Section);
+  container.appendChild(p2Section);
+  document.getElementById('gameBody').appendChild(container);
+
+  function updateRound() { roundInfo.textContent = `Round ${round} of ${MAX_ROUNDS} | 🔴 P1: ${wins[1]} - P2 🔵: ${wins[2]}`; }
+  updateRound();
+
+  function rpsResult(c1, c2) {
+    const beats = {'✊':'✌️','✌️':'🖐️','🖐️':'✊'};
+    if(c1 === c2) return 0;
+    return beats[c1] === c2 ? 1 : 2;
+  }
+
+  function checkChoice() {
+    if(!p1Choice || !p2Choice) return;
+    document.getElementById('rps-c1').textContent = p1Choice;
+    document.getElementById('rps-c2').textContent = p2Choice;
+
+    const winner = rpsResult(p1Choice, p2Choice);
+    const msgs = { 0: "IT'S A TIE! 🤝", 1: '🔴 P1 WINS this round! 🎉', 2: '🔵 P2 WINS this round! 🎊' };
+    resultText.textContent = msgs[winner];
+    resultText.style.color = winner===1?'var(--p1)':winner===2?'var(--p2)':'var(--gold)';
+    if(winner) wins[winner]++;
+    updateRound();
+
+    setTimeout(() => {
+      if(round >= MAX_ROUNDS || wins[1] > MAX_ROUNDS/2 || wins[2] > MAX_ROUNDS/2) {
+        const w = wins[1] > wins[2] ? 1 : wins[2] > wins[1] ? 2 : 0;
+        showWin(w, w ? `Player ${w} wins Rock Paper Scissors! ${w===1?wins[1]:wins[2]}-${w===1?wins[2]:wins[1]}` : "IT'S A TIE!");
+      } else {
+        round++;
+        p1Choice = null; p2Choice = null;
+        document.getElementById('rps-c1').textContent = '❓';
+        document.getElementById('rps-c2').textContent = '❓';
+        resultText.textContent = '';
+        updateRound();
+        // Re-enable buttons
+        container.querySelectorAll('.rps-btn').forEach(b => b.style.opacity='1');
+      }
+    }, 1500);
+  }
+
+  container.querySelectorAll('.rps-btn').forEach(btn => {
+    btn.style.cssText = 'font-size:2.5rem;padding:15px;background:var(--card);border:3px solid transparent;border-radius:16px;cursor:pointer;transition:all 0.2s;min-width:70px';
+    btn.addEventListener('click', () => {
+      const player = parseInt(btn.dataset.p);
+      const choice = btn.dataset.c;
+      if(player===1 && !p1Choice) { p1Choice = choice; btn.style.borderColor='var(--p1)'; container.querySelectorAll('[data-p="1"]').forEach(b=>b.style.opacity='0.5'); btn.style.opacity='1'; checkChoice(); }
+      if(player===2 && !p2Choice) { p2Choice = choice; btn.style.borderColor='var(--p2)'; container.querySelectorAll('[data-p="2"]').forEach(b=>b.style.opacity='0.5'); btn.style.opacity='1'; checkChoice(); }
+    });
+  });
+
+  return {};
+}
+
+// ====================== NIM ======================
+function initNim() {
+  const ROWS = [3, 5, 7];
+  let sticks = [...ROWS];
+  let turn = 1;
+  let selected = {row:-1, count:0};
+  setTurnBanner(1);
+
+  const container = document.createElement('div');
+  container.id = 'nim-container';
+  container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px;max-width:500px;width:100%';
+
+  const rule = document.createElement('div');
+  rule.style.cssText = 'font-size:0.8rem;opacity:0.5;text-align:center';
+  rule.textContent = '⚠️ Take 1 or more sticks from ONE row. The player who takes the LAST stick LOSES!';
+
+  const rowsContainer = document.createElement('div');
+  rowsContainer.id = 'nim-rows';
+
+  const takeBtn = document.createElement('button');
+  takeBtn.textContent = 'Take Selected Sticks! ✋';
+  takeBtn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.1rem;padding:12px 30px;border-radius:50px;border:none;background:var(--accent);color:white;cursor:pointer;opacity:0.4;pointer-events:none';
+
+  container.appendChild(rule);
+  container.appendChild(rowsContainer);
+  container.appendChild(takeBtn);
+  document.getElementById('gameBody').appendChild(container);
+
+  function renderRows() {
+    rowsContainer.innerHTML = '';
+    sticks.forEach((count, ri) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:center';
+      const label = document.createElement('span');
+      label.style.cssText = 'font-family:Boogaloo,cursive;opacity:0.5;width:20px;text-align:right';
+      label.textContent = ri+1;
+      row.appendChild(label);
+      for(let i=0;i<ROWS[ri];i++) {
+        const stick = document.createElement('div');
+        const removed = i >= count;
+        stick.style.cssText = `width:16px;height:clamp(40px,8vw,70px);background:${removed?'transparent':'linear-gradient(to right,#e8c17a,#d4a843,#e8c17a)'};border-radius:3px;cursor:${removed?'default':'pointer'};transition:all 0.2s;box-shadow:${removed?'none':'2px 2px 4px rgba(0,0,0,0.3)'}`;
+        if(!removed) {
+          stick.addEventListener('click', () => nimSelect(ri, i));
+          stick.addEventListener('mouseenter', () => stick.style.filter='brightness(1.3)');
+          stick.addEventListener('mouseleave', () => stick.style.filter='');
+        }
+        row.appendChild(stick);
+      }
+      rowsContainer.appendChild(row);
+    });
+  }
+
+  let nimRow = -1, nimCount = 0;
+
+  function nimSelect(ri, si) {
+    if(document.getElementById('winOverlay').classList.contains('show')) return;
+    if(nimRow !== -1 && nimRow !== ri) return; // must be same row
+    // Toggle: selecting up to si means take from si onwards to count-1
+    // Simpler: clicking stick i means "take sticks from i to sticks[ri]-1"
+    nimRow = ri;
+    nimCount = sticks[ri] - si;
+    renderRows();
+    // highlight selected
+    const rowEl = rowsContainer.children[ri];
+    const stickEls = Array.from(rowEl.children).slice(1);
+    stickEls.forEach((s,i) => {
+      if(i >= si) s.style.background = 'linear-gradient(to right,var(--p1),var(--accent))';
+    });
+    takeBtn.style.opacity='1'; takeBtn.style.pointerEvents='all';
+    takeBtn.textContent = `Take ${nimCount} stick${nimCount>1?'s':''}! ✋`;
+  }
+
+  takeBtn.addEventListener('click', () => {
+    if(nimRow === -1) return;
+    sticks[nimRow] -= nimCount;
+    nimRow = -1; nimCount = 0;
+    takeBtn.style.opacity='0.4'; takeBtn.style.pointerEvents='none';
+    takeBtn.textContent = 'Take Selected Sticks! ✋';
+
+    const total = sticks.reduce((a,b)=>a+b,0);
+    if(total === 0) {
+      // Last taker loses → other player wins
+      showWin(turn===1?2:1, `Player ${turn} took the last stick and LOSES! 😂`);
+    } else {
+      turn = turn===1?2:1;
+      setTurnBanner(turn);
+      renderRows();
+    }
+  });
+
+  renderRows();
+  return {};
+}
+
+// ====================== WORD SCRAMBLE ======================
+function initScramble() {
+  const WORDS = [
+    {word:'BANANA',hint:'🍌 Yellow fruit'},
+    {word:'ELEPHANT',hint:'🐘 Big grey animal'},
+    {word:'PIZZA',hint:'🍕 Italian food'},
+    {word:'RAINBOW',hint:'🌈 Colorful arc'},
+    {word:'ROCKET',hint:'🚀 Goes to space'},
+    {word:'PENGUIN',hint:'🐧 Tuxedo bird'},
+    {word:'VOLCANO',hint:'🌋 Fiery mountain'},
+    {word:'DOLPHIN',hint:'🐬 Smart ocean animal'},
+    {word:'THUNDER',hint:'⛈️ Loud storm sound'},
+    {word:'GUITAR',hint:'🎸 Stringed instrument'},
+    {word:'BUBBLE',hint:'🫧 Floats in air'},
+    {word:'CASTLE',hint:'🏰 Medieval building'},
+    {word:'POPCORN',hint:'🍿 Movie snack'},
+    {word:'MUFFIN',hint:'🧁 Baked treat'},
+    {word:'CACTUS',hint:'🌵 Desert plant'},
+  ];
+
+  let turnPlayer = 1;
+  let scores2 = {1:0, 2:0};
+  let timer = null;
+  let timeLeft = 15;
+  let currentWord = '';
+  setTurnBanner(1, '🔴 P1 is guessing!');
+
+  const container = document.createElement('div');
+  container.id = 'scramble-container';
+  container.style.cssText = 'padding:20px;display:flex;flex-direction:column;align-items:center;gap:20px;max-width:500px;width:100%';
+
+  const scoreDiv = document.createElement('div');
+  scoreDiv.className = 'score-boxes';
+  scoreDiv.innerHTML = `<div class='score-box p1'><span>🔴</span><span class='score-box-num' id='scr-s1'>0</span></div>
+    <div style='font-family:Boogaloo,cursive;opacity:0.5;align-self:center'>pts</div>
+    <div class='score-box p2'><span>🔵</span><span class='score-box-num' id='scr-s2'>0</span></div>`;
+
+  const timerEl = document.createElement('div');
+  timerEl.style.cssText = 'font-family:Boogaloo,cursive;font-size:3rem;color:var(--accent)';
+
+  const wordEl = document.createElement('div');
+  wordEl.style.cssText = 'font-family:Boogaloo,cursive;font-size:clamp(2rem,8vw,4rem);letter-spacing:8px;text-align:center;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.5)';
+
+  const hintEl = document.createElement('div');
+  hintEl.style.cssText = 'opacity:0.6;font-size:0.9rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'scramble-input';
+  input.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.5rem;padding:12px 20px;border-radius:12px;border:2px solid rgba(255,255,255,0.2);background:var(--card);color:white;text-align:center;outline:none;width:100%;max-width:280px;text-transform:uppercase';
+  input.placeholder = 'Type answer...';
+
+  const submitBtn = document.createElement('button');
+  submitBtn.textContent = 'GUESS! 🎯';
+  submitBtn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.2rem;padding:12px 30px;border-radius:50px;border:none;background:var(--green);color:#000;cursor:pointer';
+  submitBtn.addEventListener('click', checkGuess);
+  input.addEventListener('keydown', e => { if(e.key==='Enter') checkGuess(); });
+
+  const feedback = document.createElement('div');
+  feedback.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.2rem;text-align:center;min-height:1.5rem';
+
+  container.appendChild(scoreDiv);
+  container.appendChild(timerEl);
+  container.appendChild(wordEl);
+  container.appendChild(hintEl);
+  container.appendChild(input);
+  container.appendChild(submitBtn);
+  container.appendChild(feedback);
+  document.getElementById('gameBody').appendChild(container);
+
+  let usedWords = [];
+  function newWord() {
+    clearInterval(timer);
+    const available = WORDS.filter(w=>!usedWords.includes(w.word));
+    if(available.length===0) usedWords=[];
+    const w = WORDS[Math.floor(Math.random()*WORDS.length)];
+    usedWords.push(w.word);
+    currentWord = w.word;
+    wordEl.textContent = scramble(w.word);
+    hintEl.textContent = `Hint: ${w.hint}`;
+    input.value = '';
+    feedback.textContent = '';
+    input.focus();
+    timeLeft = 15;
+    timerEl.textContent = timeLeft;
+    timerEl.style.color = 'var(--accent)';
+    timer = setInterval(() => {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if(timeLeft<=5) timerEl.style.color='var(--p1)';
+      if(timeLeft<=0) {
+        clearInterval(timer);
+        feedback.textContent = `⏰ Time! It was "${currentWord}"`;
+        feedback.style.color = 'var(--p1)';
+        setTimeout(nextTurn, 1500);
+      }
+    },1000);
+  }
+
+  function scramble(word) {
+    const arr = word.split('');
+    let sc = arr.slice();
+    while(sc.join('')===word) sc.sort(()=>Math.random()-0.5);
+    return sc.join('');
+  }
+
+  function checkGuess() {
+    if(input.value.toUpperCase().trim() === currentWord) {
+      clearInterval(timer);
+      scores2[turnPlayer]++;
+      document.getElementById(`scr-s${turnPlayer}`).textContent = scores2[turnPlayer];
+      feedback.textContent = `✅ CORRECT! +1 point!`;
+      feedback.style.color = 'var(--green)';
+      if(scores2[turnPlayer] >= 5) {
+        setTimeout(()=>showWin(turnPlayer, `Player ${turnPlayer} gets 5 words first!`),800);
+      } else {
+        setTimeout(nextTurn, 1000);
+      }
+    } else {
+      feedback.textContent = '❌ Nope! Try again!';
+      feedback.style.color = 'var(--p1)';
+      input.value = '';
+    }
+  }
+
+  function nextTurn() {
+    turnPlayer = turnPlayer===1?2:1;
+    setTurnBanner(turnPlayer, `${turnPlayer===1?'🔴 P1':'🔵 P2'} is guessing!`);
+    newWord();
+  }
+
+  newWord();
+  return { stop: () => clearInterval(timer) };
+}
+
+// ====================== TRIVIA ======================
+function initTrivia() {
+  const QUESTIONS = [
+    {q:"What's the closest planet to the Sun?",a:"Mercury",opts:["Mercury","Venus","Mars","Earth"]},
+    {q:"How many sides does a hexagon have?",a:"6",opts:["5","6","7","8"]},
+    {q:"What color do you get mixing red and blue?",a:"Purple",opts:["Green","Orange","Purple","Brown"]},
+    {q:"Which animal is known as the King of the Jungle?",a:"Lion",opts:["Tiger","Elephant","Lion","Bear"]},
+    {q:"What is 7 × 8?",a:"56",opts:["54","56","58","62"]},
+    {q:"Which fruit is known for keeping the doctor away?",a:"Apple",opts:["Orange","Apple","Banana","Grapes"]},
+    {q:"How many continents are on Earth?",a:"7",opts:["5","6","7","8"]},
+    {q:"What is H2O?",a:"Water",opts:["Oxygen","Hydrogen","Water","Carbon dioxide"]},
+    {q:"Which planet has rings around it?",a:"Saturn",opts:["Jupiter","Saturn","Neptune","Uranus"]},
+    {q:"What is the capital of France?",a:"Paris",opts:["London","Berlin","Paris","Rome"]},
+    {q:"How many legs does a spider have?",a:"8",opts:["6","8","10","12"]},
+    {q:"What is the fastest land animal?",a:"Cheetah",opts:["Lion","Horse","Cheetah","Falcon"]},
+    {q:"Which ocean is the largest?",a:"Pacific",opts:["Atlantic","Indian","Pacific","Arctic"]},
+    {q:"What gas do plants breathe in?",a:"CO2",opts:["Oxygen","Nitrogen","CO2","Argon"]},
+    {q:"How many days in a leap year?",a:"366",opts:["364","365","366","367"]},
+    {q:"What's the hardest natural substance?",a:"Diamond",opts:["Gold","Iron","Quartz","Diamond"]},
+    {q:"Which country invented pizza?",a:"Italy",opts:["Greece","USA","Italy","France"]},
+    {q:"What is a baby kangaroo called?",a:"Joey",opts:["Cub","Joey","Kitten","Pup"]},
+    {q:"How many colors in a rainbow?",a:"7",opts:["5","6","7","8"]},
+    {q:"What year did the first iPhone launch?",a:"2007",opts:["2005","2006","2007","2008"]},
+  ];
+
+  const shuffled = [...QUESTIONS].sort(()=>Math.random()-0.5);
+  let qi = 0;
+  let turnPlayer = 1;
+  let scores2 = {1:0, 2:0};
+  let locked = false;
+  let timerRef = null;
+  let timeLeft = 10;
+  setTurnBanner(1, '🔴 P1\'s question!');
+
+  const container = document.createElement('div');
+  container.id = 'trivia-container';
+  container.style.cssText = 'padding:20px;display:flex;flex-direction:column;align-items:center;gap:15px;max-width:600px;width:100%';
+
+  const scoreDiv = document.createElement('div');
+  scoreDiv.className = 'score-boxes';
+  scoreDiv.innerHTML = `<div class='score-box p1'><span>🔴</span><span class='score-box-num' id='tri-s1'>0</span></div>
+    <div style='font-family:Boogaloo,cursive;opacity:0.5;align-self:center'>pts</div>
+    <div class='score-box p2'><span>🔵</span><span class='score-box-num' id='tri-s2'>0</span></div>`;
+
+  const timerEl = document.createElement('div');
+  timerEl.style.cssText = 'font-family:Boogaloo,cursive;font-size:2.5rem;color:var(--accent)';
+
+  const questionEl = document.createElement('div');
+  questionEl.style.cssText = 'font-family:Boogaloo,cursive;font-size:clamp(1.1rem,3vw,1.6rem);text-align:center;line-height:1.4';
+
+  const optContainer = document.createElement('div');
+  optContainer.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%';
+
+  const feedback = document.createElement('div');
+  feedback.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.2rem;text-align:center;min-height:1.5rem';
+
+  container.appendChild(scoreDiv);
+  container.appendChild(timerEl);
+  container.appendChild(questionEl);
+  container.appendChild(optContainer);
+  container.appendChild(feedback);
+  document.getElementById('gameBody').appendChild(container);
+
+  function showQuestion() {
+    if(qi >= shuffled.length) {
+      const w = scores2[1]>scores2[2]?1:scores2[2]>scores2[1]?2:0;
+      showWin(w); return;
+    }
+    locked = false;
+    feedback.textContent = '';
+    const q = shuffled[qi];
+    questionEl.textContent = `Q${qi+1}: ${q.q}`;
+    optContainer.innerHTML = '';
+    q.opts.sort(()=>Math.random()-0.5).forEach(opt => {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1rem;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:var(--card);color:white;cursor:pointer;transition:all 0.2s;text-align:center';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => answerQ(opt, btn, q.a));
+      optContainer.appendChild(btn);
+    });
+    timeLeft = 10; timerEl.textContent = timeLeft; timerEl.style.color='var(--accent)';
+    clearInterval(timerRef);
+    timerRef = setInterval(() => {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if(timeLeft<=3) timerEl.style.color='var(--p1)';
+      if(timeLeft<=0) { clearInterval(timerRef); if(!locked) { locked=true; feedback.textContent='⏰ Too slow!'; setTimeout(nextQ,1200); } }
+    },1000);
+  }
+
+  function answerQ(answer, btn, correct) {
+    if(locked) return;
+    locked = true;
+    clearInterval(timerRef);
+    if(answer === correct) {
+      btn.style.background = 'rgba(0,230,118,0.3)'; btn.style.borderColor='var(--green)';
+      scores2[turnPlayer]++;
+      document.getElementById(`tri-s${turnPlayer}`).textContent = scores2[turnPlayer];
+      feedback.textContent = '✅ CORRECT! +1! 🎉';
+      feedback.style.color = 'var(--green)';
+    } else {
+      btn.style.background = 'rgba(255,75,110,0.3)'; btn.style.borderColor='var(--p1)';
+      feedback.textContent = `❌ Wrong! It was: ${correct}`;
+      feedback.style.color = 'var(--p1)';
+      // show correct
+      optContainer.querySelectorAll('button').forEach(b => { if(b.textContent===correct) {b.style.background='rgba(0,230,118,0.3)';b.style.borderColor='var(--green)';} });
+    }
+    setTimeout(nextQ, 1500);
+  }
+
+  function nextQ() {
+    qi++;
+    if(scores2[turnPlayer] >= 10) { showWin(turnPlayer, `Player ${turnPlayer} reaches 10 points!`); return; }
+    turnPlayer = turnPlayer===1?2:1;
+    setTurnBanner(turnPlayer, `${turnPlayer===1?'🔴 P1':'🔵 P2'}'s question!`);
+    showQuestion();
+  }
+
+  showQuestion();
+  return { stop: () => clearInterval(timerRef) };
+}
+
+// ====================== PONG ======================
+function initPong() {
+  setTurnBanner(0, '');
+  document.getElementById('turnBanner').textContent = '🔴 P1: W/S keys  |  🔵 P2: ↑/↓ arrows (or drag!)';
+  document.getElementById('turnBanner').style.background = 'rgba(0,0,0,0.3)';
+  document.getElementById('turnBanner').style.color = 'white';
+  document.getElementById('turnBanner').style.border = '1px solid rgba(255,255,255,0.1)';
+
+  const canvas = document.createElement('canvas');
+  canvas.id = 'pong-canvas';
+  const body = document.getElementById('gameBody');
+  const bw = body.clientWidth - 20;
+  const bh = body.clientHeight - 60;
+  const W = Math.min(bw, bh * 1.5, 700);
+  const H = W / 1.5;
+  canvas.width = W; canvas.height = H;
+  canvas.style.cssText = 'border-radius:8px;border:2px solid rgba(255,255,255,0.2);display:block;max-width:100%;touch-action:none';
+  body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const PAD_W = W * 0.025, PAD_H = H * 0.2;
+  const BALL_R = W * 0.018;
+  const SPEED_INC = 0.03;
+
+  let state = {
+    p1y: H/2 - PAD_H/2,
+    p2y: H/2 - PAD_H/2,
+    bx: W/2, by: H/2,
+    bvx: (Math.random()>0.5?1:-1) * W * 0.006,
+    bvy: (Math.random()-0.5) * H * 0.012,
+    s1: 0, s2: 0,
+    maxScore: 7,
+    running: true
+  };
+
+  const keys = {};
+  const keyHandler = (e) => { keys[e.code] = e.type==='keydown'; e.preventDefault(); };
+  document.addEventListener('keydown', keyHandler);
+  document.addEventListener('keyup', keyHandler);
+
+  // Touch controls for paddles
+  let touchP1 = null, touchP2 = null;
+  canvas.addEventListener('touchstart', e => {
+    for(const t of e.changedTouches) {
+      if(t.clientX < canvas.getBoundingClientRect().left + W/2) touchP1 = t.identifier;
+      else touchP2 = t.identifier;
+    }
+  });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const scaleY = H / rect.height;
+    for(const t of e.changedTouches) {
+      const ty = (t.clientY - rect.top) * scaleY;
+      if(t.identifier === touchP1) state.p1y = Math.max(0, Math.min(H-PAD_H, ty - PAD_H/2));
+      if(t.identifier === touchP2) state.p2y = Math.max(0, Math.min(H-PAD_H, ty - PAD_H/2));
+    }
+  }, {passive:false});
+
+  const SPEED = H * 0.012;
+  function update() {
+    if(!state.running) return;
+    if(keys['KeyW']) state.p1y = Math.max(0, state.p1y - SPEED);
+    if(keys['KeyS']) state.p1y = Math.min(H-PAD_H, state.p1y + SPEED);
+    if(keys['ArrowUp']) state.p2y = Math.max(0, state.p2y - SPEED);
+    if(keys['ArrowDown']) state.p2y = Math.min(H-PAD_H, state.p2y + SPEED);
+
+    state.bx += state.bvx;
+    state.by += state.bvy;
+
+    if(state.by - BALL_R <= 0) { state.by = BALL_R; state.bvy = Math.abs(state.bvy); }
+    if(state.by + BALL_R >= H) { state.by = H-BALL_R; state.bvy = -Math.abs(state.bvy); }
+
+    // P1 paddle
+    if(state.bx - BALL_R <= PAD_W + 10 && state.by > state.p1y && state.by < state.p1y+PAD_H && state.bvx<0) {
+      state.bvx = Math.abs(state.bvx) * (1+SPEED_INC);
+      state.bvy += (state.by - (state.p1y+PAD_H/2)) / (PAD_H/2) * H * 0.006;
+      state.bx = PAD_W + 10 + BALL_R;
+    }
+    // P2 paddle
+    if(state.bx + BALL_R >= W - PAD_W - 10 && state.by > state.p2y && state.by < state.p2y+PAD_H && state.bvx>0) {
+      state.bvx = -Math.abs(state.bvx) * (1+SPEED_INC);
+      state.bvy += (state.by - (state.p2y+PAD_H/2)) / (PAD_H/2) * H * 0.006;
+      state.bx = W - PAD_W - 10 - BALL_R;
+    }
+
+    if(state.bx < 0) { state.s2++; document.getElementById('headerScore1').textContent = state.s1; document.getElementById('headerScore2').textContent = state.s2; resetBall(-1); }
+    if(state.bx > W) { state.s1++; document.getElementById('headerScore1').textContent = state.s1; document.getElementById('headerScore2').textContent = state.s2; resetBall(1); }
+
+    if(state.s1>=state.maxScore||state.s2>=state.maxScore) {
+      state.running=false;
+      scores.p1 += state.s1>state.s2?1:0;
+      scores.p2 += state.s2>state.s1?1:0;
+      setTimeout(()=>showWin(state.s1>state.s2?1:2),300);
+    }
+  }
+
+  function resetBall(dir) {
+    state.bx=W/2; state.by=H/2+(Math.random()-0.5)*H*0.3;
+    state.bvx=dir*W*0.006; state.bvy=(Math.random()-0.5)*H*0.01;
+  }
+
+  function draw() {
+    ctx.fillStyle='#0a0015';
+    ctx.fillRect(0,0,W,H);
+    ctx.setLineDash([H*0.03, H*0.03]);
+    ctx.strokeStyle='rgba(255,255,255,0.15)';
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Scores
+    ctx.font = `bold ${W*0.08}px Boogaloo, sans-serif`;
+    ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.1)';
+    ctx.fillText(state.s1, W*0.25, H*0.15);
+    ctx.fillText(state.s2, W*0.75, H*0.15);
+
+    // Paddles
+    ctx.fillStyle='var(--p1)';
+    const rnd = PAD_W/2;
+    ctx.beginPath(); ctx.roundRect(8, state.p1y, PAD_W, PAD_H, rnd); ctx.fill();
+    ctx.fillStyle='var(--p2)';
+    ctx.beginPath(); ctx.roundRect(W-PAD_W-8, state.p2y, PAD_W, PAD_H, rnd); ctx.fill();
+
+    // Ball
+    ctx.beginPath(); ctx.arc(state.bx, state.by, BALL_R, 0, Math.PI*2);
+    ctx.fillStyle='white'; ctx.fill();
+    ctx.shadowColor='white'; ctx.shadowBlur=12;
+    ctx.fill(); ctx.shadowBlur=0;
+  }
+
+  let animId;
+  function loop() {
+    update(); draw();
+    animId = requestAnimationFrame(loop);
+  }
+  loop();
+
+  return { stop: () => { state.running=false; cancelAnimationFrame(animId); document.removeEventListener('keydown',keyHandler); document.removeEventListener('keyup',keyHandler); } };
+}
+
+// ====================== COIN FLIP ======================
+function initCoinFlip() {
+  const MAX = 7;
+  let wins = {1:0, 2:0};
+  let round = 1;
+  setTurnBanner(0, '');
+  document.getElementById('turnBanner').textContent = '';
+
+  const container = document.createElement('div');
+  container.id = 'coinflip-container';
+  container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px;max-width:400px;width:100%';
+
+  const scoreDiv = document.createElement('div');
+  scoreDiv.className = 'score-boxes';
+  scoreDiv.innerHTML = `<div class='score-box p1'><span>🔴</span><span class='score-box-num' id='cf-s1'>0</span></div>
+    <div style='font-family:Boogaloo,cursive;opacity:0.5;align-self:center'>wins</div>
+    <div class='score-box p2'><span>🔵</span><span class='score-box-num' id='cf-s2'>0</span></div>`;
+
+  const coinEl = document.createElement('div');
+  coinEl.style.cssText = 'width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ffaa00,#ffd700);box-shadow:0 0 30px rgba(255,215,0,0.5),4px 4px 15px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:3.5rem;cursor:pointer;transition:transform 0.1s';
+
+  const resultEl = document.createElement('div');
+  resultEl.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.4rem;text-align:center;min-height:2rem';
+
+  const desc = document.createElement('div');
+  desc.style.cssText = 'opacity:0.6;font-size:0.85rem;text-align:center';
+  desc.textContent = `Best of ${MAX} flips! Heads (👑) = P1, Tails (🌟) = P2`;
+
+  const flipBtn = document.createElement('button');
+  flipBtn.textContent = '🪙 FLIP THE COIN!';
+  flipBtn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.2rem;padding:12px 30px;border-radius:50px;border:none;background:linear-gradient(135deg,var(--gold),var(--accent));color:#000;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 20px rgba(255,215,0,0.4)';
+
+  const roundEl = document.createElement('div');
+  roundEl.style.cssText = 'opacity:0.6;font-size:0.9rem';
+
+  container.appendChild(scoreDiv);
+  container.appendChild(coinEl);
+  container.appendChild(resultEl);
+  container.appendChild(desc);
+  container.appendChild(flipBtn);
+  container.appendChild(roundEl);
+  document.getElementById('gameBody').appendChild(container);
+
+  let flipping = false;
+
+  function updateRound() { roundEl.textContent = `Round ${round} of ${MAX}`; }
+  updateRound();
+  coinEl.textContent = '🪙';
+
+  function flip() {
+    if(flipping) return;
+    flipping = true;
+    flipBtn.disabled = true;
+    coinEl.style.animation = 'coinSpin 0.8s ease-out';
+    coinEl.style.cssText += ';animation:coinSpin 0.8s ease-out';
+    setTimeout(() => {
+      const heads = Math.random() < 0.5;
+      coinEl.textContent = heads ? '👑' : '🌟';
+      coinEl.style.animation = '';
+      const winner = heads ? 1 : 2;
+      wins[winner]++;
+      document.getElementById(`cf-s${winner}`).textContent = wins[winner];
+      resultEl.textContent = `${heads?'👑 HEADS':'🌟 TAILS'}! ${heads?'🔴 P1':'🔵 P2'} takes it!`;
+      resultEl.style.color = winner===1?'var(--p1)':'var(--p2)';
+      round++;
+      updateRound();
+      flipping = false;
+
+      const needed = Math.ceil(MAX/2);
+      if(wins[1]>=needed||wins[2]>=needed||round>MAX) {
+        const w = wins[1]>wins[2]?1:wins[2]>wins[1]?2:0;
+        setTimeout(()=>showWin(w, w?`Player ${w} wins the coin derby! 🪙`:"It's a TIE!"),500);
+      } else {
+        flipBtn.disabled = false;
+      }
+    }, 850);
+  }
+
+  flipBtn.addEventListener('click', flip);
+  coinEl.addEventListener('click', flip);
+
+  return {};
+}
+
+// ====================== REACTION ======================
+function initReaction() {
+  const ROUNDS = 6;
+  let round = 0;
+  let wins = {1:0, 2:0};
+  let state = 'wait'; // wait, ready, go
+  let timeout = null;
+  setTurnBanner(0, '');
+  document.getElementById('turnBanner').textContent = '⚡ BOTH tap when it goes GREEN!';
+  document.getElementById('turnBanner').style.background = 'rgba(0,0,0,0.3)';
+  document.getElementById('turnBanner').style.color = 'white';
+  document.getElementById('turnBanner').style.border = '1px solid rgba(255,255,255,0.1)';
+
+  const container = document.createElement('div');
+  container.id = 'reaction-container';
+  container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px;max-width:500px;width:100%';
+
+  const scoreDiv = document.createElement('div');
+  scoreDiv.className = 'score-boxes';
+  scoreDiv.innerHTML = `<div class='score-box p1'><span>🔴</span><span class='score-box-num' id='re-s1'>0</span></div>
+    <div style='font-family:Boogaloo,cursive;opacity:0.5;align-self:center'>wins</div>
+    <div class='score-box p2'><span>🔵</span><span class='score-box-num' id='re-s2'>0</span></div>`;
+
+  const light = document.createElement('div');
+  light.style.cssText = 'width:150px;height:150px;border-radius:50%;background:var(--card);border:4px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:4rem;transition:all 0.1s';
+  light.textContent = '⏳';
+
+  const info = document.createElement('div');
+  info.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.2rem;text-align:center';
+  info.textContent = 'Tap START to begin!';
+
+  const tapRow = document.createElement('div');
+  tapRow.style.cssText = 'display:flex;gap:20px';
+
+  const p1Btn = document.createElement('button');
+  p1Btn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1rem;padding:15px 30px;border-radius:50px;border:none;cursor:pointer;background:var(--p1);color:white;transition:all 0.1s';
+  p1Btn.textContent = '🔴 P1 TAP!';
+
+  const p2Btn = document.createElement('button');
+  p2Btn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1rem;padding:15px 30px;border-radius:50px;border:none;cursor:pointer;background:var(--p2);color:white;transition:all 0.1s';
+  p2Btn.textContent = '🔵 P2 TAP!';
+
+  const roundEl = document.createElement('div');
+  roundEl.style.cssText = 'opacity:0.6;font-size:0.9rem';
+
+  const startBtn = document.createElement('button');
+  startBtn.style.cssText = 'font-family:Boogaloo,cursive;font-size:1.1rem;padding:12px 25px;border-radius:50px;border:none;background:var(--green);color:#000;cursor:pointer';
+  startBtn.textContent = '🚦 START ROUND';
+
+  tapRow.appendChild(p1Btn);
+  tapRow.appendChild(p2Btn);
+
+  container.appendChild(scoreDiv);
+  container.appendChild(light);
+  container.appendChild(info);
+  container.appendChild(tapRow);
+  container.appendChild(roundEl);
+  container.appendChild(startBtn);
+  document.getElementById('gameBody').appendChild(container);
+
+  function updateRound() { roundEl.textContent = `Round ${round+1} of ${ROUNDS} | P1: ${wins[1]} - P2: ${wins[2]}`; }
+  updateRound();
+
+  function startRound() {
+    if(round >= ROUNDS) return;
+    state = 'wait';
+    light.style.background = '#880000';
+    light.style.boxShadow = '0 0 30px rgba(255,0,0,0.5)';
+    light.textContent = '🔴';
+    info.textContent = 'Wait for GREEN...';
+    startBtn.style.display = 'none';
+    const delay = 1500 + Math.random() * 3000;
+    timeout = setTimeout(goGreen, delay);
+  }
+
+  function goGreen() {
+    state = 'go';
+    light.style.background = 'var(--green)';
+    light.style.boxShadow = '0 0 60px var(--green)';
+    light.textContent = '💚';
+    info.textContent = '⚡ TAP NOW! ⚡';
+  }
+
+  let firstTap = null;
+
+  function tap(player) {
+    if(state === 'wait') {
+      clearTimeout(timeout);
+      info.textContent = `😂 P${player} jumped the gun! Other player gets the point!`;
+      info.style.color = 'var(--p1)';
+      const other = player===1?2:1;
+      wins[other]++;
+      document.getElementById(`re-s${other}`).textContent = wins[other];
+      afterRound();
+    } else if(state === 'go') {
+      if(firstTap===null) {
+        firstTap = player;
+        // wait a tiny bit to see if both tap simultaneously
+        setTimeout(() => {
+          const w = firstTap;
+          wins[w]++;
+          document.getElementById(`re-s${w}`).textContent = wins[w];
+          info.textContent = `🏆 Player ${w} was FASTER!`;
+          info.style.color = w===1?'var(--p1)':'var(--p2)';
+          light.style.background = 'var(--card)';
+          light.style.boxShadow = '';
+          light.textContent = '⏳';
+          firstTap = null;
+          afterRound();
+        }, 100);
+      }
+    }
+  }
+
+  function afterRound() {
+    state = 'done';
+    round++;
+    updateRound();
+    if(round >= ROUNDS || wins[1] > ROUNDS/2 || wins[2] > ROUNDS/2) {
+      const w = wins[1]>wins[2]?1:wins[2]>wins[1]?2:0;
+      setTimeout(()=>showWin(w, w?`Player ${w} has lightning reflexes! ⚡`:"Tied reflexes! 🤝"),800);
+    } else {
+      setTimeout(() => {
+        info.textContent = '';
+        info.style.color = '';
+        startBtn.style.display = '';
+      }, 1200);
+    }
+  }
+
+  p1Btn.addEventListener('click', () => tap(1));
+  p2Btn.addEventListener('click', () => tap(2));
+  p1Btn.addEventListener('touchstart', (e) => { e.preventDefault(); tap(1); }, {passive:false});
+  p2Btn.addEventListener('touchstart', (e) => { e.preventDefault(); tap(2); }, {passive:false});
+  startBtn.addEventListener('click', startRound);
+
+  return { stop: () => clearTimeout(timeout) };
+}
+
+// ====================== INIT ======================
+buildCharGrid('p1Grid', 1);
+buildCharGrid('p2Grid', 2);
+buildGamesGrid();
+</script>
+</body>
+</html>
